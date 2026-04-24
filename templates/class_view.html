@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scanning {{ class_name }}</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center; padding-top: 50px; }
+        .video-box { border: 5px solid #3b82f6; border-radius: 20px; overflow: hidden; display: inline-block; box-shadow: 0 0 50px rgba(59, 130, 246, 0.4); }
+        .back { color: #94a3b8; text-decoration: none; display: block; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <a href="/" class="back">← Back to Dashboard</a>
+    <h1>Currently Scanning: <span style="color: #3b82f6;">{{ class_name }}</span></h1>
+    
+    <div class="video-box">
+        <img src="{{ url_for('video_feed') }}" width="700">
+    </div>
+
+    <p>The AI is currently processing students for this section.</p>
+</body>
+</html>

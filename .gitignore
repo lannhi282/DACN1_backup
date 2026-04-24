@@ -1,0 +1,109 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python build files
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# =========================
+# Flask
+# =========================
+instance/
+.webassets-cache
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# =========================
+# Database / SQL backup
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+backup_file.sql
+backup_file_utf8.sql
+backup_file_fixed.sql
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Uploads / generated files
+# =========================
+static/uploads/
+static/temp/
+static/generated/
+uploads/
+temp/
+
+# Excel / PDF exports
+*.xlsx
+*.xls
+*.csv
+*.pdf
+
+# =========================
+# Face images / attendance data
+# =========================
+static/enrollments/
+students/
+captured_faces/
+faces/
+dataset/
+
+# Nếu bạn muốn commit ảnh mẫu thì bỏ comment dòng dưới:
+# !students/sample.jpg
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# =========================
+# Windows
+# =========================
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =========================
+# macOS
+# =========================
+.DS_Store
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# TensorFlow / DeepFace cache
+# =========================
+.deepface/
+.keras/
+*.h5
+*.weights.h5
+.history/

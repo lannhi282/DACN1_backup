@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teacher Login - EduScan</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { background: #eef2f3; display: flex; align-items: center; height: 100vh; }
+        .login-card { max-width: 400px; margin: auto; padding: 2rem; border-radius: 15px; background: white; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 5px solid #007bff; }
+    </style>
+</head>
+<body>
+    <div class="login-card w-100">
+        <h3 class="text-center mb-4">Teacher Login</h3>
+        <p class="text-center text-muted small">Please use the credentials provided by the Admin.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form action="/teacher/login" method="POST">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" required placeholder="Your username">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" required placeholder="Your password">
+            </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+            <a href="/" class="d-block text-center mt-3 text-secondary">Back to Portal Selection</a>
+        </form>
+    </div>
+</body>
+</html>

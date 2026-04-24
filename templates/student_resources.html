@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Resources: {{ class_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f0f1e;
+            --card-bg: #1e1e2f;
+            --accent-blue: #4e73df;
+            --text-gray: #aaa;
+            --btn-hover: #33334d;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+        }
+
+        .title-section h1 {
+            color: var(--accent-blue);
+            margin: 0;
+            font-size: 2.2rem;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .back-btn:hover {
+            background: var(--btn-hover);
+        }
+
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .resource-card {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .resource-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-3px);
+        }
+
+        .icon-box {
+            font-size: 2.5rem;
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .file-info h3 {
+            margin: 10px 0;
+            font-size: 1.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .description {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            height: 40px;
+            overflow: hidden;
+        }
+
+        .download-btn {
+            background: var(--accent-blue);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .download-btn:hover {
+            filter: brightness(1.2);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px;
+            color: var(--text-gray);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-section">
+            <h1>Resources: {{ class_name }}</h1>
+            <p style="color: var(--text-gray);">Download your syllabus and study materials below</p>
+        </div>
+        <a href="javascript:history.back()" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="resource-grid">
+        {% if resources %}
+            {% for row in resources %}
+            <div class="resource-card">
+                <div class="icon-box">
+                    {% if row[1] and 'pdf' in row[1]|lower %}
+                        <i class="fas fa-file-pdf"></i>
+                    {% elif row[1] and ('ppt' in row[1]|lower or 'pptx' in row[1]|lower) %}
+                        <i class="fas fa-file-powerpoint"></i>
+                    {% elif row[1] and ('doc' in row[1]|lower or 'docx' in row[1]|lower) %}
+                        <i class="fas fa-file-word"></i>
+                    {% else %}
+                        <i class="fas fa-file-alt"></i>
+                    {% endif %}
+                </div>
+                
+                <div class="file-info">
+                    <h3>{{ row[0] }}</h3>
+                    <p class="description">{{ row[3] if row[3] else 'No description available.' }}</p>
+                </div>
+
+                <a href="{{ url_for('static', filename=row[2]) }}" 
+                   target="_blank" 
+                   class="download-btn"
+                   {% if row[1] and 'ppt' in row[1]|lower %} download {% endif %}>
+                    <i class="fas fa-download"></i> Download File
+                </a>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-folder-open fa-3x"></i>
+                <p>No study materials have been uploaded for this class yet.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

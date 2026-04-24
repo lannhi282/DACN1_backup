@@ -1,0 +1,23 @@
+<div class="class-header">
+    <h1>{{ class_name }} Dashboard</h1>
+    <p>Subjects: <strong>{{ subjects }}</strong></p>
+</div>
+
+<div class="main-layout" style="display: flex; gap: 20px;">
+    <div class="scanner-section" style="flex: 2;">
+        <div class="video-card">
+            <img src="{{ url_for('video_feed') }}" width="100%">
+            <button onclick="finalizeAttendance()">FINISH & MARK ABSENT</button>
+        </div>
+    </div>
+
+    <div class="student-list" style="flex: 1; background: #1e293b; padding: 20px; border-radius: 15px;">
+        <h3>Students in Class ({{ students|length }})</h3>
+        {% for s in students %}
+        <div class="student-row" style="border-bottom: 1px solid #334155; padding: 10px 0;">
+            <span>{{ s.name }}</span>
+            <span id="status-{{ s.name }}" class="badge">Waiting...</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>

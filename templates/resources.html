@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resources: {{ class_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f0f1e;
+            --card-bg: #1e1e2f;
+            --accent-purple: #a286f4;
+            --text-gray: #aaa;
+            --btn-hover: #33334d;
+            --danger-red: #ff5f5f;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .title-section h1 {
+            color: var(--accent-purple);
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .back-btn:hover {
+            background: var(--btn-hover);
+        }
+
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .resource-card {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 25px;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .resource-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-purple);
+        }
+
+        /* Special Styling for the Upload Card */
+        .upload-card {
+            border: 2px dashed var(--accent-purple);
+            background: rgba(162, 134, 244, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .icon-box {
+            font-size: 2rem;
+            color: var(--accent-purple);
+            margin-bottom: 15px;
+        }
+
+        .file-type-tag {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            background: rgba(162, 134, 244, 0.2);
+            color: var(--accent-purple);
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .view-link {
+            display: block;
+            margin-top: 20px;
+            background: #2a2a40;
+            color: white;
+            text-align: center;
+            padding: 12px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: 0.3s;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .view-link:hover {
+            background: var(--accent-purple);
+            color: #0f0f1e;
+        }
+
+        .delete-btn {
+            background: rgba(255, 95, 95, 0.1);
+            color: var(--danger-red);
+            padding: 8px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            border: 1px solid var(--danger-red);
+            margin-top: 10px;
+            display: block;
+            text-align: center;
+            transition: 0.3s;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .no-data {
+            text-align: center;
+            grid-column: 1 / -1;
+            padding: 50px;
+            color: var(--text-gray);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-section">
+            <h1>Resources: {{ class_name }}</h1>
+            <p style="color: var(--text-gray);">Syllabus, Notes, and Academic Materials</p>
+        </div>
+        
+        <a href="{{ url_for('teacher_dashboard') if session.get('role') == 'teacher' else url_for('student_portal', student_id=session.get('user_id')) }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Portal
+        </a>
+    </div>
+
+    <div class="resource-grid">
+        
+        {% if session.get('role') == 'teacher' %}
+        <div class="resource-card upload-card">
+            <div class="icon-box">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <h3>Upload New</h3>
+            <p style="color: var(--text-gray); font-size: 0.85rem; margin-bottom: 15px;">Add files for {{ class_name }}</p>
+            
+            <form action="{{ url_for('upload_resource') }}" method="POST" enctype="multipart/form-data" id="quickUploadForm">
+                <input type="hidden" name="class_name" value="{{ class_name }}">
+                <label for="file-upload" class="view-link" style="cursor: pointer;">
+                    <i class="fas fa-plus"></i> Select File
+                </label>
+                <input id="file-upload" name="file" type="file" style="display: none;" onchange="document.getElementById('quickUploadForm').submit();">
+            </form>
+        </div>
+        {% endif %}
+
+        {% if resources %}
+            {% for row in resources %}
+            <div class="resource-card">
+                <div class="icon-box">
+                    {% if row[0] and '.pdf' in row[0].lower() %}
+                        <i class="fas fa-file-pdf"></i>
+                    {% elif row[0] and ('.ppt' in row[0].lower() or '.pptx' in row[0].lower()) %}
+                        <i class="fas fa-file-powerpoint"></i>
+                    {% elif row[0] and ('.doc' in row[0].lower() or '.docx' in row[0].lower()) %}
+                        <i class="fas fa-file-word"></i>
+                    {% elif row[0] and ('.xls' in row[0].lower() or '.xlsx' in row[0].lower()) %}
+                        <i class="fas fa-file-excel"></i>
+                    {% else %}
+                        <i class="fas fa-file-alt"></i>
+                    {% endif %}
+                </div>
+
+                <span class="file-type-tag">{{ row[1] if row[1] else 'File' }}</span> 
+                
+                <h3 style="margin: 15px 0 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ row[0] }}">
+                    {{ row[0] }}
+                </h3> 
+                
+                <p style="color: var(--text-gray); font-size: 0.9rem; min-height: 40px;">
+                    {{ row[3] if row[3] else 'No description available.' }}
+                </p>
+
+                <!-- FIXED: Changed 'uploads/' to 'uploads/resources/' -->
+                <a href="{{ url_for('static', filename='uploads/resources/' + row[2]) }}" 
+                   target="_blank" 
+                   class="view-link">
+                    <i class="fas {% if '.ppt' in row[0].lower() %}fa-download{% else %}fa-eye{% endif %}"></i>
+                    {{ 'Download' if '.ppt' in row[0].lower() else 'View' }} Document
+                </a>
+
+                {% if session.get('role') == 'teacher' %}
+                <form action="{{ url_for('delete_resource', resource_id=row[4]) }}" method="POST" onsubmit="return confirm('Delete this file?');">
+                    <button type="submit" class="delete-btn">
+                        <i class="fas fa-trash"></i> Delete Resource
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            {% if session.get('role') != 'teacher' %}
+            <div class="no-data">
+                <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                <p>No resources have been shared with this class yet.</p>
+            </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+</body>
+</html>

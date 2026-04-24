@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Class Fees</title>
+    <style>
+        :root {
+            --bg-color: #0f0f1e;
+            --card-bg: #1e1e2f;
+            --accent-purple: #a286f4;
+            --text-gray: #aaa;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 40px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: var(--accent-purple);
+            margin-bottom: 30px;
+        }
+        .fee-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        .fee-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #333;
+        }
+        .fee-card h3 {
+            margin-top: 0;
+            color: var(--accent-purple);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: var(--text-gray);
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #2a2a40;
+            color: white;
+            box-sizing: border-box;
+        }
+        .btn {
+            background: var(--accent-purple);
+            color: #0f0f1e;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--text-gray);
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            color: var(--accent-purple);
+        }
+        .action-bar {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-manual {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('admin_dashboard') }}" class="back-btn">← Back to Dashboard</a>
+        
+        <h1>💰 Class Fee Management</h1>
+        
+        <div class="action-bar">
+            <div>
+                <strong>Automatic Invoice Generation</strong>
+                <p style="margin: 5px 0 0 0; color: var(--text-gray); font-size: 0.9rem;">
+                    Invoices are generated automatically on the 1st of every month
+                </p>
+            </div>
+            <form action="{{ url_for('generate_invoices_now') }}" method="POST" onsubmit="return confirm('Generate invoices for all students now?');">
+                <button type="submit" class="btn-manual">Generate Invoices Now</button>
+            </form>
+        </div>
+
+        <div class="fee-grid">
+            {% for cf in class_fees %}
+            <div class="fee-card">
+                <h3>Class {{ cf.class_name }}</h3>
+                <form action="{{ url_for('update_class_fee') }}" method="POST">
+                    <input type="hidden" name="class_name" value="{{ cf.class_name }}">
+                    
+                    <div class="form-group">
+                        <label>Monthly Fee (Rs.)</label>
+                        <input type="number" name="monthly_fee" value="{{ cf.monthly_fee or 0 }}" min="0" step="100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Admission Fee (Rs.)</label>
+                        <input type="number" name="admission_fee" value="{{ cf.admission_fee or 0 }}" min="0" step="100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Exam Fee (Rs.)</label>
+                        <input type="number" name="exam_fee" value="{{ cf.exam_fee or 0 }}" min="0" step="100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Other Charges (Rs.)</label>
+                        <input type="number" name="other_charges" value="{{ cf.other_charges or 0 }}" min="0" step="100">
+                    </div>
+                    
+                    <button type="submit" class="btn">Save Fee Structure</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

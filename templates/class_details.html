@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ class_name }} | Resources</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #8b5cf6; --text: #f8fafc; --border: #334155; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 40px; }
+        .container { max-width: 1000px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .doc-card { background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid var(--border); transition: 0.3s; }
+        .doc-card:hover { border-color: var(--accent); }
+        .doc-card i { font-size: 30px; color: var(--accent); margin-bottom: 15px; display: block; }
+        .btn-back { color: var(--text); text-decoration: none; background: var(--border); padding: 10px 20px; border-radius: 8px; }
+        .upload-section { margin-top: 40px; padding: 20px; background: rgba(139, 92, 246, 0.05); border: 1px dashed var(--accent); border-radius: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1 style="color: var(--accent);">Resources: {{ class_name }}</h1>
+            <p style="color: #94a3b8;">Syllabus, Date Sheets, and Academic Instructions</p>
+        </div>
+        <a href="/teacher" class="btn-back">← Back to Portal</a>
+    </div>
+
+    <div class="grid">
+        <div class="doc-card">
+            <i class="fas fa-book-open"></i>
+            <h3>Class Syllabus</h3>
+            <p style="font-size: 14px; color: #94a3b8;">Download the latest curriculum for the 2024-25 session.</p>
+            <a href="#" class="btn-back" style="display: block; text-align: center; margin-top: 15px;">View Syllabus</a>
+        </div>
+
+        <div class="doc-card">
+            <i class="fas fa-calendar-alt"></i>
+            <h3>Date Sheets</h3>
+            <p style="font-size: 14px; color: #94a3b8;">Upcoming Mid-term and Final Examination schedules.</p>
+            <a href="#" class="btn-back" style="display: block; text-align: center; margin-top: 15px;">View Date Sheet</a>
+        </div>
+
+        <div class="doc-card">
+            <i class="fas fa-sticky-note"></i>
+            <h3>Teacher Instructions</h3>
+            <p style="font-size: 14px; color: #94a3b8;">Important guidelines for paper checking and student conduct.</p>
+            <a href="#" class="btn-back" style="display: block; text-align: center; margin-top: 15px;">View Instructions</a>
+        </div>
+    </div>
+
+    <div class="upload-section">
+        <h3><i class="fas fa-cloud-upload-alt"></i> Upload New Document</h3>
+        <p>Teachers can upload PDF notes or instructions for the students here.</p>
+        <button style="background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer;">Select Files</button>
+    </div>
+</div>
+</body>
+</html>

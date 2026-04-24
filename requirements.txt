@@ -1,0 +1,10 @@
+flask
+flask-sqlalchemy
+flask-login
+pymysql
+cryptography
+python-dotenv
+werkzeug
+opencv-python
+numpy
+deepface

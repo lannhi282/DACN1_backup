@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Attendance | {{ my_class }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 1px solid #334155;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 15px;
+        }
+
+        h2 { color: var(--accent); margin: 0; font-size: 1.5rem; }
+        
+        .attendance-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 15px;
+            border-radius: 12px;
+        }
+
+        .meta-group { display: flex; flex-direction: column; gap: 5px; }
+        .meta-group label { color: var(--text-dim); font-size: 0.8rem; font-weight: 600; }
+        
+        .meta-group select, .meta-group input {
+            background: var(--bg-dark);
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-dim);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .student-name {
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .attendance-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-present { background-color: var(--success); color: white; }
+        .btn-absent { background-color: var(--danger); color: white; transform: scale(0.95); }
+
+        .save-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .status-label {
+            font-size: 0.75rem;
+            display: block;
+            margin-top: 5px;
+            color: var(--text-dim);
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2><i class="fas fa-clipboard-user"></i> Attendance: {{ my_class }}</h2>
+        <a href="/teacher" style="color: var(--text-dim); text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-times"></i> Cancel
+        </a>
+    </div>
+
+    <form action="/teacher/save_attendance" method="POST">
+        <div class="attendance-meta">
+            <div class="meta-group">
+                <label>Attendance Date</label>
+                <input type="date" name="attendance_date" value="{{ today }}" required>
+            </div>
+            <div class="meta-group">
+                <label>Select Subject</label>
+                <select name="subject" required>
+                    {% for sub in subjects %}
+                    <option value="{{ sub.strip() }}">{{ sub.strip() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th style="text-align: center; width: 100px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td class="student-name">{{ student.name }}</td>
+                    <td style="display: flex; flex-direction: column; align-items: center;">
+                        <button type="button" 
+                                id="btn-{{ student.id }}" 
+                                class="attendance-btn btn-present"
+                                onclick="toggleAttendance('{{ student.id }}', '{{ student.name }}')">
+                            P
+                        </button>
+                        <span id="label-{{ student.id }}" class="status-label">Present</span>
+                        
+                        <input type="hidden" 
+                               name="attendance_status" 
+                               id="input-{{ student.id }}" 
+                               value="{{ student.name }}"> </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button type="submit" class="save-btn">
+            <i class="fas fa-check-circle"></i> Confirm & Save Attendance
+        </button>
+    </form>
+</div>
+
+<script>
+/**
+ * Toggles student status between Present and Absent.
+ * 'P' (Present) sends the student's name in the form.
+ * 'A' (Absent) removes the value so the server knows the student is absent.
+ */
+function toggleAttendance(id, name) {
+    const btn = document.getElementById('btn-' + id);
+    const label = document.getElementById('label-' + id);
+    const hiddenInput = document.getElementById('input-' + id);
+
+    if (btn.innerText === 'P') {
+        // Switch to Absent
+        btn.innerText = 'A';
+        btn.classList.replace('btn-present', 'btn-absent');
+        label.innerText = 'Absent';
+        label.style.color = '#ef4444';
+        
+        // Remove name from value to mark as absent
+        hiddenInput.value = ""; 
+    } else {
+        // Switch to Present
+        btn.innerText = 'P';
+        btn.classList.replace('btn-absent', 'btn-present');
+        label.innerText = 'Present';
+        label.style.color = '#94a3b8';
+        
+        // Put name back in value to mark as present
+        hiddenInput.value = name;
+    }
+}
+</script>
+
+</body>
+</html>

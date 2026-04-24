@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EduScan | Attendance Logs</title>
+    <style>
+        body {
+            background-color: #0f172a; /* EduScan AI Dark Theme */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            margin: 0;
+            padding: 40px;
+        }
+        h1 {
+            text-align: center;
+            color: #3b82f6;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        /* Folder System Styling */
+        .class-folder {
+            width: 85%;
+            margin: 0 auto 15px auto;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .folder-header {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            transition: 0.3s;
+        }
+        .folder-header:hover { background: #2d3748; }
+        .folder-header h2 { margin: 0; color: #f59e0b; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+
+        .log-content {
+            display: none; /* Hidden by default */
+            background: #0f172a;
+            border-top: 1px solid #334155;
+        }
+
+        /* Action Container inside folder */
+        .actions-container {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: flex-end;
+            background: #1a2233;
+        }
+
+        .finalize-btn {
+            background: #f59e0b;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 13px;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        .finalize-btn:hover { background: #d97706; }
+
+        .back-btn-container {
+            width: 85%;
+            margin: 0 auto 20px auto;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            background: #1e293b; 
+        }
+        th, td { 
+            padding: 15px; 
+            border: 1px solid #334155; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #3b82f6; 
+            color: white; 
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        tr:nth-child(even) { background-color: #1a2233; }
+        tr:hover { background-color: #2d3748; }
+        
+        td { color: #cbd5e1; font-size: 14px; }
+
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-present { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+        .status-absent { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+        .back-btn { 
+            display: inline-block; 
+            padding: 10px 20px; 
+            background: #334155; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: #475569; }
+
+        .alert {
+            width: 50%;
+            margin: 0 auto 20px auto;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            background: #065f46;
+            color: #a7f3d0;
+            border: 1px solid #059669;
+        }
+
+        .badge {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Attendance History Reports</h1>
+    <p class="subtitle">Click a Class Folder to View Detailed Daily Logs</p>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="back-btn-container">
+        <a href="/" class="back-btn">← Back to Dashboard</a>
+    </div>
+
+    <div class="container">
+        {% for class_name, logs in grouped_logs.items() %}
+        <div class="class-folder">
+            <div class="folder-header" onclick="toggleFolder('{{ class_name|replace(' ', '_') }}')">
+                <h2>📂 {{ class_name }} Logs</h2>
+                <span class="badge">{{ logs|length }} Records</span>
+            </div>
+            
+            <div class="log-content" id="log-{{ class_name|replace(' ', '_') }}">
+                <div class="actions-container">
+                    <a href="/finalize_class/{{ class_name }}" 
+                       class="finalize-btn" 
+                       onclick="event.stopPropagation(); return confirm('Mark remaining students as ABSENT for today?')">
+                        📋 Finalize Session
+                    </a>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Log Date</th>
+                            <th>Time Recorded</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in logs %}
+                        <tr>
+                            <td><strong>{{ row.student_name }}</strong></td>
+                            <td>{{ row.log_date }}</td>
+                            <td>{{ row.log_time if row.status == 'Present' else '--:--:--' }}</td>
+                            <td>
+                                {% if row.status == 'Present' %}
+                                    <span class="status-pill status-present">Present</span>
+                                {% else %}
+                                    <span class="status-pill status-absent">Absent</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; margin-top: 100px; color: #94a3b8;">
+            <h3>No Attendance Data Available</h3>
+            <p>Once students are scanned, logs will appear here categorized by class.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        function toggleFolder(id) {
+            const content = document.getElementById('log-' + id);
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        }
+    </script>
+
+    <div style="text-align: center; margin-top: 40px; color: #475569; font-size: 12px;">
+        EduScan AI Biometric System &copy; 2026
+    </div>
+
+</body>
+</html>

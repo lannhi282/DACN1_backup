@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Database - Eduscan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #3498db; --light: #ecf0f1; --success: #27ae60; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--light); margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .back-btn { text-decoration: none; color: white; background: var(--primary); padding: 10px 20px; border-radius: 5px; transition: 0.3s; }
+        .back-btn:hover { background: var(--accent); }
+        
+        .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 40px; overflow: hidden; }
+        .card-header { background: var(--secondary); color: white; padding: 15px 20px; font-size: 1.2rem; display: flex; align-items: center; }
+        .card-header i { margin-right: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; color: var(--primary); font-weight: 600; }
+        tr:hover { background: #f1f1f1; }
+        
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; background: #e1f5fe; color: #0288d1; }
+        .badge-present { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-database"></i> System Database Tables</h1>
+            <a href="{{ url_for('admin_dashboard') }}" class="back-btn"><i class="fas fa-arrow-left"></i> Dashboard</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-clipboard-check"></i> Recent Attendance Log</div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Class</th>
+                            <th>Subject</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in attendance %}
+                        <tr>
+                            <td><strong>{{ a.student_name }}</strong></td>
+                            <td>{{ a.class_name }}</td>
+                            <td>{{ a.subject }}</td>
+                            <td>{{ a.log_date }}</td>
+                            <td>{{ a.log_time }}</td>
+                            <td>
+                                <span class="status-badge {% if a.status == 'Present' %}badge-present{% endif %}">
+                                    {{ a.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not attendance %}
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding: 20px; color: #666;">No attendance records found.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-user-graduate"></i> Students Data</div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Class</th>
+                            <th>Password</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td>#{{ s.id }}</td>
+                            <td><strong>{{ s.name }}</strong></td>
+                            <td><span class="status-badge">{{ s.class_name }}</span></td>
+                            <td><code>{{ s.password }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-chalkboard-teacher"></i> Teachers Data</div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Assigned Class</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in teachers %}
+                        <tr>
+                            <td>#{{ t.id }}</td>
+                            <td><strong>{{ t.full_name }}</strong></td>
+                            <td>{{ t.username }}</td>
+                            <td>{{ t.assigned_class }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="fas fa-school"></i> Classes Data</div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Class Name</th>
+                            <th>Subjects</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in classes %}
+                        <tr>
+                            <td><strong>{{ c.class_name }}</strong></td>
+                            <td>{{ c.subjects }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduScan | Professional Attendance</title>
+    <style>
+        /* --- THEME VARIABLES --- */
+        :root {
+            --bg-body: #0f172a;
+            --bg-sidebar: #1e293b;
+            --bg-main: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --card-bg: #1e293b;
+            --input-bg: #0f172a;
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+            --scan-glow: rgba(59, 130, 246, 0.5);
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-sidebar: #ffffff;
+            --bg-main: radial-gradient(circle at center, #ffffff 0%, #e2e8f0 100%);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #cbd5e1;
+            --card-bg: #f8fafc;
+            --input-bg: #ffffff;
+        }
+
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.3s ease; }
+        .sidebar { width: 320px; background: var(--bg-sidebar); padding: 25px; border-right: 1px solid var(--border-color); overflow-y: auto; transition: 0.3s ease; display: flex; flex-direction: column; position: relative; }
+        .main-content { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; background: var(--bg-main); transition: 0.3s ease; overflow-y: auto; }
+        
+        /* --- SIDEBAR TOGGLE STYLES --- */
+        .sidebar.collapsed { width: 0; padding: 0; border: none; overflow: hidden; }
+        .toggle-btn { position: absolute; top: 15px; right: -45px; background: var(--bg-sidebar); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; cursor: pointer; border-radius: 0 8px 8px 0; display: flex; flex-direction: column; gap: 4px; z-index: 1000; }
+        .toggle-line { width: 20px; height: 2px; background: var(--primary); display: block; }
+
+        /* Flash Message Styling */
+        .flash-messages { position: fixed; top: 20px; right: 20px; z-index: 1000; width: 300px; }
+        .flash { padding: 15px; border-radius: 10px; margin-bottom: 10px; color: white; font-weight: bold; animation: slideIn 0.5s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .flash-success { background: #10b981; }
+        .flash-error { background: #ef4444; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .portal-nav { background: var(--input-bg); padding: 10px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+        .nav-link { color: var(--text-muted); text-decoration: none; font-size: 12px; font-weight: 600; display: block; padding: 10px; border-radius: 8px; transition: 0.3s; margin-bottom: 5px; text-align: center; border: 1px solid transparent; }
+        .nav-link:hover { background: rgba(59, 130, 246, 0.1); color: var(--primary); border-color: var(--primary); }
+
+        input, button, select { width: 100%; padding: 12px; margin-top: 12px; border-radius: 10px; border: 1px solid var(--border-color); box-sizing: border-box; font-size: 14px; outline: none; }
+        input, select { background: var(--input-bg); color: var(--text-main); }
+        button { cursor: pointer; font-weight: 700; border: none; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39); }
+        .btn-secondary { background: var(--secondary); color: white; box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.39); }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+        .btn-outline:hover { background: var(--border-color); }
+        
+        .btn-back-nav { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 20px; font-size: 13px; display: flex; align-items: center; gap: 8px; width: auto; margin: 0; border-radius: 8px; }
+        .btn-back-nav:hover { background: var(--primary); color: white; }
+
+        .video-container { 
+            position: relative; 
+            border-radius: 24px; 
+            overflow: hidden; 
+            border: 4px solid var(--border-color); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); 
+            background: #000; 
+            width: 800px; 
+            height: 450px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        #active-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(1.1);
+        }
+
+        #placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #1e293b 0%, #020617 100%);
+            color: var(--primary);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .radar-circle {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: pulseRadar 2s ease-out infinite;
+        }
+        .radar-circle:nth-child(2) { animation-delay: 0.6s; }
+        .radar-circle:nth-child(3) { animation-delay: 1.2s; }
+
+        @keyframes pulseRadar {
+            0% { transform: scale(0.5); opacity: 0.8; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        .placeholder-text {
+            z-index: 2;
+            font-weight: 800;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px var(--primary);
+            font-family: 'Courier New', monospace;
+            animation: glowText 2s ease-in-out infinite;
+        }
+
+        @keyframes glowText {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        #placeholder::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            transform: rotate(15deg);
+            pointer-events: none;
+        }
+
+        .scanner-line { 
+            position: absolute; 
+            width: 100%; 
+            height: 4px; 
+            background: var(--primary); 
+            box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary); 
+            top: 0; 
+            z-index: 10; 
+            display: none; 
+            pointer-events: none;
+        }
+        @keyframes scanMove { 
+            0% { top: 0%; opacity: 0; } 
+            15% { opacity: 1; }
+            85% { opacity: 1; }
+            100% { top: 100%; opacity: 0; } 
+        }
+
+        .scan-region {
+            position: absolute;
+            top: 15%; left: 15%; right: 15%; bottom: 15%;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
+        }
+        .corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--primary);
+            opacity: 0.7;
+        }
+        .top-left { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+        .top-right { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+        .bottom-left { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+        .bottom-right { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+        .scan-status-text {
+            position: absolute;
+            bottom: 20px;
+            background: rgba(0,0,0,0.8);
+            color: var(--primary);
+            padding: 5px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            border: 1px solid var(--primary);
+            z-index: 15;
+            display: none;
+        }
+
+        #management-section, #faces-section, #enroll-section, #enroll-teacher-section { display: none; width: 100%; max-width: 1100px; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
+        
+        .class-gallery-toggle { background: var(--bg-sidebar); padding: 20px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .class-gallery-toggle:hover { border-color: var(--primary); }
+        .gallery-content { display: none; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 12px; margin-bottom: 20px; }
+        .faces-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        
+        .face-card { background: var(--bg-sidebar); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); transition: 0.3s; position: relative; }
+        .face-card:hover { transform: scale(1.05); border-color: var(--primary); }
+        .face-img { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 10px; }
+
+        .btn-delete-face { position: absolute; top: 8px; right: 8px; background: #ef4444; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; font-weight: bold; border: 2px solid var(--bg-sidebar); transition: 0.2s; z-index: 5; }
+        .btn-delete-face:hover { background: #b91c1c; transform: scale(1.2); }
+
+        .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-style: italic; }
+
+        .class-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .class-card { background: var(--bg-sidebar); padding: 25px; border-radius: 18px; border: 1px solid var(--border-color); border-left: 6px solid var(--primary); position: relative; }
+        .count-badge { background: var(--input-bg); color: var(--primary); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; border: 1px solid var(--border-color); }
+        
+        .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+        .btn-mini { flex: 1; padding: 10px 5px; font-size: 11px; border-radius: 8px; text-decoration: none; text-align: center; color: white; font-weight: bold; min-width: 70px; }
+        
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 25px 0; }
+        #theme-toggle { background: var(--border-color); color: var(--text-main); padding: 8px; margin-bottom: 15px; font-size: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        
+        .edit-form { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border-color); }
+    </style>
+</head>
+<body>
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="toggle-btn" onclick="toggleSidebar()">
+            <span class="toggle-line"></span>
+            <span class="toggle-line"></span>
+            <span class="toggle-line"></span>
+        </div>
+
+        <h2 style="margin-bottom: 10px; letter-spacing: -1px;">EduScan <span style="color: var(--primary);">AI</span></h2>
+        
+        <button id="theme-toggle" onclick="toggleTheme()">
+            <span id="theme-icon">🌙</span> Dark Mode
+        </button>
+
+        <div class="portal-nav">
+            <span style="font-size: 10px; color: #6366f1; text-transform: uppercase; letter-spacing: 1px; margin-left: 5px; font-weight: bold;">User Portals</span>
+            <a href="{{ url_for('student_login') }}" class="nav-link">🎓 Student Portal</a>
+            <a href="{{ url_for('teacher_login') }}" class="nav-link">👨‍🏫 Teacher Portal</a>
+            <a href="{{ url_for('logout') }}" class="nav-link" style="color:#ef4444;">🚪 Logout</a>
+        </div>
+
+        <button class="btn-primary" onclick="showCamera(); startScanning();">⚡ START SCANNER</button>
+        <button class="btn-outline" style="margin-top: 10px; color: #ef4444;" onclick="stopScanning()">🛑 STOP FEED</button>
+
+        <hr>
+
+        <h3 style="margin-top: 10px; font-size: 14px; color: var(--text-muted); text-transform: uppercase;">Biometric Records</h3>
+        <button class="btn-secondary" onclick="showFaces()">👤 VIEW ENROLLED FACES</button>
+        <button class="btn-primary" style="margin-top: 10px; background: #3b82f6;" onclick="showEnrollSection()">📸 ENROLL STUDENT</button>
+        <button class="btn-primary" style="margin-top: 10px; background: #8b5cf6;" onclick="showTeacherEnrollSection()">👨‍🏫 ENROLL TEACHER</button>
+
+        {% if session.get('role') == 'admin' %}
+            <button class="btn-outline" style="margin-top: 10px;" onclick="location.href='{{ url_for('view_tables') }}'">📊 SYSTEM DATABASE</button>
+        {% endif %}
+
+        <button class="btn-outline" style="margin-top: 10px; border-color: #10b981; color: #10b981;" onclick="location.href='{{ url_for('backup_data') }}'">📥 EXPORT EXCEL</button>
+
+        <div style="flex-grow: 1;"></div>
+        <button class="btn-primary" style="background: #f59e0b;" onclick="showClasses()">📁 CLASS SETUP</button>
+    </div>
+
+    <div class="main-content">
+        <div id="video-section">
+            <div class="video-container" id="vid-box">
+                <div class="scanner-line" id="line"></div>
+                <div class="scan-region" id="scan-corners">
+                    <div class="corner top-left"></div>
+                    <div class="corner top-right"></div>
+                    <div class="corner bottom-left"></div>
+                    <div class="corner bottom-right"></div>
+                </div>
+                <div class="scan-status-text" id="status-label">SCANNING BIOMETRICS...</div>
+
+                <div id="login-popup" style="display:none; position:absolute; top: 20px; background:rgba(16, 185, 129, 0.9); color: white; padding:15px 30px; border-radius:50px; z-index:100; font-weight: bold; border: 2px solid #fff;">
+                    ✅ Identified: <span id="user-name"></span>
+                </div>
+                
+                <div id="placeholder">
+                    <div class="radar-circle"></div>
+                    <div class="radar-circle"></div>
+                    <div class="radar-circle"></div>
+                    <div style="font-size: 50px; margin-bottom: 15px; z-index: 2;">🛡️</div>
+                    <div class="placeholder-text">SYSTEM STANDBY</div>
+                    <div style="font-size: 10px; color: var(--text-muted); margin-top: 10px; z-index: 2;">SECURE BIOMETRIC LINK READY</div>
+                </div>
+                <img id="active-feed" src="" width="800" style="display: none; border-radius: 20px;">
+            </div>
+            <h2 id="clock" style="color: var(--primary); margin-top: 25px; font-family: monospace; font-size: 32px;"></h2>
+        </div>
+
+        <div id="enroll-section">
+            <div class="section-header">
+                <div>
+                    <h2 style="margin: 0;">📸 Student Enrollment</h2>
+                    <p style="color: var(--text-muted); margin: 5px 0 0 0;">Register biometric data to the secure AI database.</p>
+                </div>
+                <button class="btn-back-nav" onclick="showCamera()">← BACK TO SCANNER</button>
+            </div>
+            
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <div class="class-card" style="width: 100%; max-width: 500px; border-left: none; border-top: 4px solid var(--primary);">
+                    <h3 style="margin-top: 0; text-align: center;">Registration Form</h3>
+                    <form action="{{ url_for('add_student') }}" method="POST" enctype="multipart/form-data">
+                        <input type="text" name="student_name" placeholder="Student Full Name" required>
+                        <select name="student_class" required>
+                            <option value="" disabled selected>Select Class</option>
+                            {% for c in classes %}
+                            <option value="{{ c.class_name }}">{{ c.class_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="password" name="student_password" placeholder="Set Portal Password" required>
+                        <button type="submit" class="btn-primary" style="margin-top: 25px; padding: 15px;">📸 START FACE CAPTURE</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="enroll-teacher-section">
+            <div class="section-header">
+                <div>
+                    <h2 style="margin: 0;">👨‍🏫 Teacher Registration</h2>
+                    <p style="color: var(--text-muted); margin: 5px 0 0 0;">Add new teacher and assign their primary class.</p>
+                </div>
+                <button class="btn-back-nav" onclick="showCamera()">← BACK TO SCANNER</button>
+            </div>
+            
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <div class="class-card" style="width: 100%; max-width: 500px; border-left: none; border-top: 4px solid var(--secondary);">
+                    <h3 style="margin-top: 0; text-align: center;">Teacher Details</h3>
+                    <form action="{{ url_for('add_teacher') }}" method="POST" enctype="multipart/form-data">
+                        <input type="text" name="t_name" placeholder="Full Name" required>
+                        <input type="text" name="t_username" placeholder="Username (for login)" required>
+                        <input type="password" name="t_password" placeholder="Password" required>
+                        <select name="t_class" required>
+                            <option value="" disabled selected>Assign Class</option>
+                            {% for c in classes %}
+                            <option value="{{ c.class_name }}">{{ c.class_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn-secondary" style="margin-top: 25px; padding: 15px;">💾 SAVE TEACHER & CAPTURE FACE</button>
+                    </form>
+                </div>
+            </div>
+
+            <hr style="margin-top: 50px;">
+            <div class="section-header">
+                <h2 style="margin: 0;">📋 Registered Teachers</h2>
+            </div>
+            <div class="class-grid">
+                {% if teachers %}
+                    {% for t in teachers %}
+                    <div class="class-card" style="border-left-color: var(--secondary);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="margin: 0;">{{ t.full_name }}</h4>
+                            <span class="count-badge">Class: {{ t.assigned_class }}</span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); margin-top: 10px;">User: <b>{{ t.username }}</b></p>
+                        <div class="btn-group">
+                            <a href="{{ url_for('remove_teacher', id=t.id) }}" class="btn-mini btn-outline" style="border-color: #ef4444; color: #ef4444; text-decoration: none; line-height: 2.5;" onclick="return confirm('Delete this teacher?')">DELETE</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="grid-column: 1/-1;">No teachers enrolled yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="management-section">
+            <div class="section-header">
+                <div>
+                    <h2 style="margin: 0;">🏫 Class Management</h2>
+                    <p style="color: var(--text-muted); margin: 5px 0 0 0;">Manage attendance logs and class sessions.</p>
+                </div>
+                <button class="btn-primary" style="width: auto; padding: 12px 25px;" onclick="toggleAddClass()">+ NEW CLASS</button>
+            </div>
+
+            <div id="addClassForm" style="display:none; margin-bottom: 30px; background: var(--bg-sidebar); padding: 20px; border-radius: 12px; border: 1px solid var(--primary);">
+                <form action="{{ url_for('add_class') }}" method="POST" style="display: flex; gap: 15px; align-items: flex-end;">
+                    <input type="text" name="new_class_name" placeholder="Class Name" required style="margin:0">
+                    <input type="text" name="subjects" placeholder="Subject" required style="margin:0">
+                    <button type="submit" class="btn-primary" style="width: auto; margin: 0; padding: 12px 30px;">SAVE</button>
+                </form>
+            </div>
+
+            <div class="class-grid">
+                {% for c in classes %}
+                <div class="class-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0; font-size: 18px;">{{ c.class_name }}</h4>
+                        <span class="count-badge">{{ c.student_count }} Students</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); margin: 0;">Subject: <b>{{ c.subjects }}</b></p>
+                    <div class="btn-group">
+                        <button class="btn-mini btn-primary" onclick="showCamera(); startScanning();">SCAN</button>
+                        <a href="{{ url_for('view_logs', class_name=c.class_name) }}" class="btn-mini btn-secondary" style="line-height: 2.5;">LOGS</a>
+                        <button class="btn-mini btn-outline" style="border-color: #10b981; color: #10b981;" onclick="toggleEdit('{{ loop.index }}')">EDIT</button>
+                        <button class="btn-mini btn-outline" style="border-color: #f59e0b; color: #f59e0b;" onclick="if(confirm('Finalize Attendance?')) location.href='{{ url_for('finalize_class', class_name=c.class_name) }}'">FINISH</button>
+                    </div>
+                    <div id="edit-form-{{ loop.index }}" class="edit-form">
+                        <form action="{{ url_for('update_class_subject', class_name=c.class_name) }}" method="POST">
+                            <input type="text" name="new_subject" value="{{ c.subjects }}" placeholder="Update Subject" required>
+                            <button type="submit" class="btn-primary" style="padding: 8px; font-size: 12px;">UPDATE NOW</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="faces-section">
+            <div class="section-header">
+                <div>
+                    <h2 style="margin: 0;">🖼️ Biometric Gallery</h2>
+                    <p style="color: var(--text-muted); margin: 5px 0 0 0;">Click on a class to view enrolled student pictures.</p>
+                </div>
+                <button class="btn-back-nav" onclick="showCamera()">← BACK TO SCANNER</button>
+            </div>
+            
+            {% if classes %}
+                {% for c in classes %}
+                <div class="class-gallery-toggle" onclick="toggleGallery('{{ loop.index }}')">
+                    <div style="font-weight: bold; font-size: 16px;">📂 {{ c.class_name }} Gallery</div>
+                    <div class="count-badge">{{ c.student_count }} Students</div>
+                </div>
+                
+                <div id="gallery-{{ loop.index }}" class="gallery-content">
+                    <div class="faces-grid">
+                        {% set found_student = namespace(value=false) %}
+                        
+                        {% for s in students %}
+                            {% if s.class_name == c.class_name %}
+                                {% set found_student.value = true %}
+                                <div class="face-card" id="student-card-{{ s.id }}">
+                                    <div class="btn-delete-face"
+                                       title="Delete Biometric"
+                                       onclick="deleteStudent('{{ s.id }}', '{{ s.name }}')">
+                                       ×
+                                    </div>
+
+                                    {% if s.face_image %}
+                                         <img src="{{ s.face_image }}" class="face-img" alt="Student Face">
+                                    {% else %}
+                                         <img src="https://ui-avatars.com/api/?name={{ s.name }}&background=3b82f6&color=fff" class="face-img" alt="No Face">
+                                    {% endif %}
+                                    <div style="font-size: 12px; font-weight: bold;">{{ s.name }}</div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if not found_student.value %}
+                            <div class="empty-state" style="grid-column: 1/-1;">
+                                <p>No Students Enrolled for this class.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <h3>No Classes Found</h3>
+                    <p>Create a class in the Management Center to start enrolling students.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // SIDEBAR TOGGLE FUNCTION
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+
+        // Auto-hide flash messages after 4 seconds
+        setTimeout(() => {
+            const flashes = document.querySelectorAll('.flash');
+            flashes.forEach(f => f.style.display = 'none');
+        }, 4000);
+
+        function hideAllSections() {
+            document.getElementById('video-section').style.display = 'none';
+            document.getElementById('management-section').style.display = 'none';
+            document.getElementById('faces-section').style.display = 'none';
+            document.getElementById('enroll-section').style.display = 'none';
+            document.getElementById('enroll-teacher-section').style.display = 'none';
+        }
+
+        function showClasses() { hideAllSections(); document.getElementById('management-section').style.display = 'block'; stopScanning(); }
+        function showCamera() { hideAllSections(); document.getElementById('video-section').style.display = 'flex'; }
+        function showFaces() { hideAllSections(); document.getElementById('faces-section').style.display = 'block'; stopScanning(); }
+        function showEnrollSection() { hideAllSections(); document.getElementById('enroll-section').style.display = 'block'; stopScanning(); }
+        function showTeacherEnrollSection() { hideAllSections(); document.getElementById('enroll-teacher-section').style.display = 'block'; stopScanning(); }
+
+        function toggleAddClass() {
+            const form = document.getElementById('addClassForm');
+            form.style.display = (form.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function toggleEdit(id) {
+            const form = document.getElementById('edit-form-' + id);
+            form.style.display = (form.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function toggleGallery(id) {
+            const content = document.getElementById('gallery-' + id);
+            const isVisible = content.style.display === 'block';
+            document.querySelectorAll('.gallery-content').forEach(el => el.style.display = 'none');
+            content.style.display = isVisible ? 'none' : 'block';
+        }
+
+        // --- NEW AJAX DELETE FUNCTION ---
+       function deleteStudent(studentId, studentName) {
+            if (confirm(`Permanently delete facial data for ${studentName}?`)) {
+                fetch(`/delete_student_face/${studentId}`)
+                .then(response => {
+                    if (response.ok) {
+                        const card = document.getElementById(`student-card-${studentId}`);
+                        if (card) {
+                            card.style.transition = "all 0.3s ease";
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.8)';
+                            setTimeout(() => card.remove(), 300);
+                        }
+                    } else {
+                        alert("Server error: Could not delete from database.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Delete error:", err);
+                    alert("Connection error. Page will refresh.");
+                    window.location.reload();
+                });
+            }
+        }
+
+        function startScanning() {
+            const feed = document.getElementById('active-feed');
+            const placeholder = document.getElementById('placeholder');
+            const line = document.getElementById('line');
+            const corners = document.getElementById('scan-corners');
+            const statusLabel = document.getElementById('status-label');
+
+            placeholder.style.transition = "opacity 0.5s ease";
+            placeholder.style.opacity = "0";
+
+            setTimeout(() => {
+                placeholder.style.display = "none";
+                feed.src = "{{ url_for('video_feed') }}";
+                feed.style.display = "block";
+                feed.style.opacity = "0";
+                
+                line.style.display = "block";
+                line.style.animation = "scanMove 3s ease-in-out infinite";
+                corners.style.display = "block";
+                statusLabel.style.display = "block";
+                
+                setTimeout(() => { 
+                    feed.style.opacity = "1"; 
+                    feed.style.transition = "opacity 0.5s ease"; 
+                }, 50);
+            }, 500);
+        }
+
+        function stopScanning() {
+            const feed = document.getElementById('active-feed');
+            const placeholder = document.getElementById('placeholder');
+            const line = document.getElementById('line');
+            const corners = document.getElementById('scan-corners');
+            const statusLabel = document.getElementById('status-label');
+            
+            feed.src = ""; 
+            feed.style.display = "none";
+            placeholder.style.display = "flex";
+            placeholder.style.opacity = "1";
+            line.style.display = "none";
+            corners.style.display = "none";
+            statusLabel.style.display = "none";
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                icon.innerText = "🌙";
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                icon.innerText = "☀️";
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+            document.getElementById('theme-icon').innerText = "☀️";
+        }
+    </script>
+</body>
+</html>

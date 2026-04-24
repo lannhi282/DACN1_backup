@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal | EduScan AI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- 1. THEME VARIABLES & DYNAMIC COLORS --- */
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --nav-hover: #334155;
+            --table-border: #334155;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        [data-theme="light"] {
+            --bg-main: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --nav-hover: #e2e8f0;
+            --table-border: #cbd5e1;
+        }
+
+        /* --- 2. BASE LAYOUT & SIDEBAR --- */
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .sidebar { 
+            width: 260px; 
+            background: var(--bg-card); 
+            border-right: 1px solid var(--border-color); 
+            display: flex; 
+            flex-direction: column; 
+            padding: 25px; 
+            box-sizing: border-box; 
+        }
+
+        .sidebar-brand { 
+            color: #3b82f6; 
+            font-size: 22px; 
+            font-weight: bold; 
+            margin-bottom: 30px; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        
+        .student-profile-sidebar {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .student-profile-sidebar img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #3b82f6;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        .nav-link { 
+            width: 100%; 
+            padding: 12px 15px; 
+            margin-bottom: 5px; 
+            border-radius: 10px; 
+            border: none; 
+            background: transparent; 
+            color: var(--text-muted); 
+            text-align: left; 
+            cursor: pointer; 
+            font-size: 14px; 
+            font-weight: 500; 
+            transition: 0.3s; 
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-link:hover { background: var(--nav-hover); color: var(--text-main); }
+        .nav-link.active { background: #3b82f6; color: white; }
+
+        /* --- 3. MAIN CONTENT AREA --- */
+        .main-content { flex: 1; overflow-y: auto; padding: 40px; box-sizing: border-box; }
+        .container { max-width: 1100px; margin: auto; }
+        
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 4. UI COMPONENTS (CARDS, GRIDS, BADGES) --- */
+        .header-banner { 
+            background: var(--bg-card); 
+            padding: 25px; 
+            border-radius: 20px; 
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            margin-bottom: 30px; 
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .subject-card {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .subject-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: #3b82f6;
+        }
+
+        .attendance-stat {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--success);
+            margin-top: 10px;
+            display: block;
+        }
+
+        /* Status Labels */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-paid { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-unpaid { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .status-pending { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+        /* Buttons and Interactive Elements */
+        .btn-download {
+            background: var(--accent);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 12px;
+            transition: 0.3s;
+        }
+        .btn-download:hover { opacity: 0.8; }
+
+        .btn-print {
+            background: var(--success);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            transition: 0.3s;
+        }
+        .btn-print:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .logout-btn { background: #ef4444; color: white; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: bold; font-size: 14px; margin-top: 10px; text-align: center; }
+        .back-btn { background: var(--border-color); color: var(--text-main); padding: 10px 20px; border-radius: 10px; text-decoration: none; font-size: 13px; text-align: center; margin-top: auto; border: 1px solid transparent; transition: 0.3s; margin-bottom: 10px; }
+
+        .card { 
+            background: var(--bg-card); 
+            padding: 25px; 
+            border-radius: 15px; 
+            border: 1px solid var(--border-color); 
+            margin-bottom: 25px; 
+        }
+
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: var(--text-muted); font-size: 12px; text-transform: uppercase; padding: 12px; border-bottom: 2px solid var(--border-color); }
+        td { padding: 12px; border-bottom: 1px solid var(--table-border); font-size: 14px; color: var(--text-main); }
+        
+        /* Form Inputs */
+        .pw-input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-main); box-sizing: border-box; }
+        .pw-btn { width: 100%; background: #3b82f6; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; margin-top: 15px; font-weight: bold; }
+
+        /* Progress Bars */
+        .progress-container { width: 100%; background: var(--bg-input); border-radius: 10px; height: 8px; margin: 10px 0; }
+        .progress-bar { height: 100%; border-radius: 10px; }
+
+        #theme-toggle {
+            width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border-color); 
+            background: var(--bg-input); color: var(--text-main); cursor: pointer;
+        }
+
+        .report-table {
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .report-table th { background: rgba(59, 130, 246, 0.1); color: var(--accent); }
+        .total-row { background: rgba(16, 185, 129, 0.05); font-weight: bold; }
+
+        /* --- 5. PRINT SPECIFIC STYLES --- */
+        @media print {
+            body { background: #fff !important; color: #000 !important; display: block !important; }
+            .sidebar, #theme-toggle, .btn-print, .back-btn, .logout-btn, .nav-link, .flash-messages { display: none !important; }
+            .main-content { padding: 0 !important; margin: 0 !important; overflow: visible !important; width: 100% !important; }
+            .container { max-width: 100% !important; padding: 20px !important; }
+            .card, .header-banner { 
+                border: 2px solid #000 !important; 
+                background: white !important; 
+                color: black !important; 
+                box-shadow: none !important;
+                margin-bottom: 10px !important;
+            }
+            .report-table th { background: #f0f0f0 !important; color: black !important; border-bottom: 2px solid black !important; }
+            .report-table td { border-bottom: 1px solid #000 !important; color: black !important; }
+            .status-badge { border: 1px solid black !important; background: transparent !important; color: black !important; }
+            .print-only-header { display: block !important; text-align: center; margin-bottom: 30px; }
+            .header-banner h2, .header-banner p, .header-banner div { color: black !important; }
+        }
+        .print-only-header { display: none; }
+
+        /* Resource Grid Style */
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .resource-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .resource-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+        
+        .resource-icon {
+            font-size: 30px;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        /* NEW: Invoice Summary Cards */
+        .invoice-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .summary-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: 0.3s;
+        }
+        
+        .summary-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .summary-card h4 {
+            margin: 0 0 10px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .summary-card .amount {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .summary-card.unpaid .amount { color: var(--danger); }
+        .summary-card.paid .amount { color: var(--success); }
+        .summary-card.total .amount { color: var(--accent); }
+        
+        .invoice-alert {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .invoice-alert i {
+            font-size: 24px;
+            color: var(--danger);
+        }
+        
+        .auto-invoice-badge {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div class="sidebar">
+        <div class="sidebar-brand"><i class="fas fa-fingerprint"></i> EduScan AI</div>
+        
+        <div class="student-profile-sidebar">
+            <img src="{{ url_for('static', filename='enrollments/' + student.name + '.jpg') }}" onerror="this.src='https://ui-avatars.com/api/?name={{ student.name }}&background=3b82f6&color=fff'" alt="Profile">
+            <div style="font-weight: bold; font-size: 14px;">{{ student.name }}</div>
+            <div style="color: var(--text-muted); font-size: 11px;">#{{ student.id }}</div>
+        </div>
+
+        <button id="theme-toggle">☀️ Light Mode</button>
+
+        <button class="nav-link active" onclick="showTab('dashboard', this)"><i class="fas fa-th-large"></i> Dashboard</button>
+        <button class="nav-link" onclick="showTab('resources', this)"><i class="fas fa-folder-open"></i> Class Resources</button>
+        <button class="nav-link" onclick="showTab('leave', this)"><i class="fas fa-envelope"></i> Leave Requests</button>
+        <button class="nav-link" onclick="showTab('academics', this)"><i class="fas fa-graduation-cap"></i> Academics</button>
+        <button class="nav-link" onclick="showTab('diary', this)"><i class="fas fa-book"></i> Daily Diary</button>
+        <button class="nav-link" onclick="showTab('finance', this)"><i class="fas fa-file-invoice-dollar"></i> Invoices</button>
+        
+        <button class="nav-link" onclick="showTab('settings', this)"><i class="fas fa-cog"></i> Security</button>
+        
+        <div style="margin-top: auto; display: flex; flex-direction: column;">
+            <a href="/" class="back-btn">⬅️ Admin View</a>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="flash-messages">
+                  {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <div class="print-only-header">
+                <h1 style="margin:0; font-size: 32px; letter-spacing: 2px;">REPORT CARD</h1>
+                <h3 style="margin:5px 0; color: #666;">EduScan AI Educational Institute</h3>
+                <hr style="border: 1px solid black;">
+            </div>
+
+            <div class="header-banner">
+                <div>
+                    <h2 style="margin:0;">Welcome back, {{ student.name }}!</h2>
+                    <p style="color: var(--text-muted); margin: 5px 0 0 0;">School Management & Tracking System</p>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; color: #3b82f6;">Academic Year 2026</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">{{ student.class_name }}</div>
+                </div>
+            </div>
+
+            <div id="dashboard" class="tab-content active">
+                <div class="row" style="display: flex; gap: 20px; margin-bottom: 25px;">
+                    <div class="card" style="flex: 1; margin-bottom:0;">
+                        <span style="font-size: 12px; color: var(--text-muted);">OVERALL ATTENDANCE</span>
+                        <h3 style="color: var(--success);">{{ percentage }}%</h3>
+                    </div>
+                    <div class="card" style="flex: 1; margin-bottom:0;">
+                        <span style="font-size: 12px; color: var(--text-muted);">PENDING DUES</span>
+                        <h3>
+                            {% set unpaid = namespace(total=0) %}
+                            {% for inv in invoices if inv.status == 'Unpaid' %}
+                                {% set unpaid.total = unpaid.total + inv.amount %}
+                            {% endfor %}
+                            Rs. {{ unpaid.total }}
+                        </h3>
+                    </div>
+                </div>
+
+                <!-- NEW: Monthly Invoice Notification -->
+                {% set has_unpaid = namespace(found=false) %}
+                {% for inv in invoices if inv.status == 'Unpaid' %}
+                    {% if 'Monthly Fee' in inv.description %}
+                        {% set has_unpaid.found = true %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if has_unpaid.found %}
+                <div class="invoice-alert">
+                    <i class="fas fa-bell"></i>
+                    <div>
+                        <strong>Monthly Fee Due!</strong>
+                        <p style="margin: 5px 0 0 0; font-size: 13px; color: var(--text-muted);">
+                            Your monthly fee invoice has been generated. Please pay before the due date to avoid late charges.
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <h3><i class="fas fa-book-open"></i> Subject-wise Attendance</h3>
+                <div class="subject-grid">
+                    {% if subject_attendance %}
+                        {% for sub in subject_attendance %}
+                        <div class="subject-card">
+                            <h4 style="margin:0;">{{ sub.subject }}</h4>
+                            <p style="font-size: 11px; color: var(--text-muted);">Total Lessons: {{ sub.total }}</p>
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width: {{ (sub.present / sub.total * 100)|round(0) }}%; background: #3b82f6;"></div>
+                            </div>
+                            <span class="attendance-stat">Present: {{ sub.present }} Days</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="card" style="grid-column: span 3; text-align: center; color: var(--text-muted);">
+                            No attendance logs found yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="resources" class="tab-content">
+                <div class="card">
+                    <h3><i class="fas fa-download"></i> Class Resources</h3>
+                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Access files, notes, and documents uploaded specifically for your class by teachers.</p>
+                    
+                    <div class="resource-grid">
+                        {% if teacher_files %}
+                            {% for file in teacher_files %}
+                            <div class="resource-card">
+                                <div>
+                                    <div class="resource-icon">
+                                        {% if 'pdf' in file.filename.lower() %}
+                                            <i class="fas fa-file-pdf" style="color: #ef4444;"></i>
+                                        {% elif 'doc' in file.filename.lower() %}
+                                            <i class="fas fa-file-word" style="color: #3b82f6;"></i>
+                                        {% else %}
+                                            <i class="fas fa-file-alt"></i>
+                                        {% endif %}
+                                    </div>
+                                    <h4 style="margin:0; font-size: 16px;">{{ file.title or file.filename }}</h4>
+                                    <p style="color: var(--text-muted); font-size: 12px; margin: 8px 0;">Uploaded: {{ file.upload_date or 'Recent' }}</p>
+                                </div>
+                                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                    <a href="/{{ file.file_path }}" class="btn-download" style="flex:1; text-align: center;" target="_blank">View</a>
+                                    <a href="/{{ file.file_path }}" class="btn-download" style="flex:1; text-align: center; background: var(--success);" download>Download</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div style="grid-column: span 3; text-align: center; padding: 40px;">
+                                <i class="fas fa-folder-open" style="font-size: 40px; color: var(--border-color); margin-bottom: 10px; display: block;"></i>
+                                <p style="color: var(--text-muted);">No resources have been uploaded for your class yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div id="leave" class="tab-content">
+                <div class="card">
+                    <h3>✉️ New Leave Request</h3>
+                    <form action="/student/request_leave" method="POST" style="display: grid; gap: 15px;">
+                        <input type="hidden" name="student_name" value="{{ student.name }}">
+                        <input type="hidden" name="class_name" value="{{ student.class_name }}">
+                        <div style="display: flex; gap: 15px;">
+                            <div style="flex: 1;">
+                                <label>Start Date</label>
+                                <input type="date" name="start_date" id="start_date" class="pw-input" required>
+                            </div>
+                            <div style="flex: 1;">
+                                <label>End Date</label>
+                                <input type="date" name="end_date" id="end_date" class="pw-input" required>
+                            </div>
+                        </div>
+                        <textarea name="reason" rows="3" class="pw-input" placeholder="Reason for leave..." required></textarea>
+                        <button type="submit" class="pw-btn">Submit Request</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3><i class="fas fa-history"></i> Leave Request History</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dates</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if leave_requests %}
+                                {% for req in leave_requests %}
+                                <tr>
+                                    <td>{{ req.start_date }} to {{ req.end_date }}</td>
+                                    <td>{{ req.reason }}</td>
+                                    <td>
+                                        {% if req.status == 'Approved' %}
+                                            <span class="status-badge status-paid">Approved</span>
+                                        {% elif req.status == 'Rejected' %}
+                                            <span class="status-badge status-unpaid">Rejected</span>
+                                        {% else %}
+                                            <span class="status-badge status-pending">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">No leave history found.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NEW: Enhanced Finance Tab with Auto Invoice Info -->
+            <div id="finance" class="tab-content">
+                <!-- Invoice Summary Cards -->
+                <div class="invoice-summary">
+                    {% set unpaid_total = namespace(amount=0, count=0) %}
+                    {% set paid_total = namespace(amount=0, count=0) %}
+                    {% for inv in invoices %}
+                        {% if inv.status == 'Unpaid' %}
+                            {% set unpaid_total.amount = unpaid_total.amount + inv.amount %}
+                            {% set unpaid_total.count = unpaid_total.count + 1 %}
+                        {% else %}
+                            {% set paid_total.amount = paid_total.amount + inv.amount %}
+                            {% set paid_total.count = paid_total.count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <div class="summary-card unpaid">
+                        <h4>Total Unpaid</h4>
+                        <p class="amount">Rs. {{ unpaid_total.amount }}</p>
+                        <small style="color: var(--text-muted);">{{ unpaid_total.count }} invoice(s)</small>
+                    </div>
+                    
+                    <div class="summary-card paid">
+                        <h4>Total Paid</h4>
+                        <p class="amount">Rs. {{ paid_total.amount }}</p>
+                        <small style="color: var(--text-muted);">{{ paid_total.count }} invoice(s)</small>
+                    </div>
+                    
+                    <div class="summary-card total">
+                        <h4>Total Amount</h4>
+                        <p class="amount">Rs. {{ unpaid_total.amount + paid_total.amount }}</p>
+                        <small style="color: var(--text-muted);">All time</small>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>
+                        <i class="fas fa-file-invoice-dollar"></i> School Fee Invoices
+                        <span class="auto-invoice-badge">AUTO-GENERATED</span>
+                    </h3>
+                    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 15px;">
+                        <i class="fas fa-info-circle"></i> 
+                        Monthly fee invoices are automatically generated on the 1st of every month based on your class fee structure.
+                    </p>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th>Due Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for inv in invoices %}
+                            <tr>
+                                <td>
+                                    {{ inv.description }}
+                                    {% if 'Monthly Fee' in inv.description %}
+                                        <span class="auto-invoice-badge">AUTO</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ inv.due_date }}</td>
+                                <td>Rs. {{ inv.amount }}</td>
+                                <td>
+                                    <span class="status-badge {{ 'status-paid' if inv.status == 'Paid' else 'status-unpaid' }}">
+                                        {{ inv.status }}
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <a href="/download_invoice/{{ inv.id }}" class="btn-download">
+                                        <i class="fas fa-download"></i> PDF
+                                    </a>
+                                    {% if inv.status == 'Unpaid' %}
+                                    <button class="btn-download" style="background: var(--success); margin-left: 5px;" onclick="alert('Payment gateway integration coming soon!')">
+                                        <i class="fas fa-credit-card"></i> Pay
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                    <i class="fas fa-receipt" style="font-size: 40px; display: block; margin-bottom: 10px;"></i>
+                                    No invoices found. Monthly invoices will appear here automatically.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Fee Structure Info Card -->
+                <div class="card" style="background: rgba(59, 130, 246, 0.05); border-color: var(--accent);">
+                    <h4><i class="fas fa-info-circle"></i> Fee Structure Information</h4>
+                    <p style="color: var(--text-muted); font-size: 13px; margin: 10px 0;">
+                        Your class <strong>{{ student.class_name }}</strong> has the following fee structure:
+                    </p>
+                    <ul style="color: var(--text-muted); font-size: 13px; line-height: 1.8;">
+                        <li><i class="fas fa-check" style="color: var(--success);"></i> Monthly Fee: Automatically generated on 1st of every month</li>
+                        <li><i class="fas fa-check" style="color: var(--success);"></i> Due Date: 15th of every month</li>
+                        <li><i class="fas fa-check" style="color: var(--success);"></i> Late charges may apply after due date</li>
+                        <li><i class="fas fa-check" style="color: var(--success);"></i> Download PDF receipt for all payments</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="academics" class="tab-content">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin:0;"><i class="fas fa-poll-h"></i> Academic Result Card</h3>
+                        <button onclick="window.print()" class="btn-print">
+                            <i class="fas fa-print"></i> Print Report Card
+                        </button>
+                    </div>
+
+                    <div class="report-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Subject Name</th>
+                                    <th>Exam Type</th>
+                                    <th>Total Marks</th>
+                                    <th>Obtained Marks</th>
+                                    <th>Percentage</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set total_calc = namespace(obtain=0, full=0) %}
+                                {% for g in grades %}
+                                    {% set obtain_val = g.marks_obtained or g.marks or 0 %}
+                                    {% set full_val = g.total_marks or 100 %}
+                                    {% set total_calc.obtain = total_calc.obtain + obtain_val %}
+                                    {% set total_calc.full = total_calc.full + full_val %}
+                                    <tr>
+                                        <td style="font-weight: 500;">{{ g.subject }}</td>
+                                        <td style="color: var(--text-muted);">{{ g.exam_type or 'Final' }}</td>
+                                        <td>{{ full_val }}</td>
+                                        <td style="color: var(--accent); font-weight: bold;">{{ obtain_val }}</td>
+                                        <td>
+                                            {% if full_val > 0 %}
+                                                {{ (obtain_val / full_val * 100)|round(1) }}%
+                                            {% else %}
+                                                0%
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="status-badge status-paid">Passed</span></td>
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">No academic records released yet.</td></tr>
+                                {% endfor %}
+
+                                {% if grades %}
+                                <tr class="total-row">
+                                    <td colspan="2" style="text-align: right;">GRAND TOTAL:</td>
+                                    <td>{{ total_calc.full }}</td>
+                                    <td style="color: var(--success);">{{ total_calc.obtain }}</td>
+                                    <td>
+                                        {% if total_calc.full > 0 %}
+                                            {{ (total_calc.obtain / total_calc.full * 100)|round(1) }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </td>
+                                    <td>OVERALL: <b>PASS</b></td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-top: 30px; padding: 20px; border-top: 2px dashed var(--border-color);">
+                        <h4 style="margin-top:0;">TEACHER'S COMMENTS</h4>
+                        <p style="font-style: italic; color: var(--text-muted);">
+                            {{ auto_comment }}
+                        </p>
+                        <div style="margin-top: 40px; display: flex; justify-content: space-between;">
+                            <div style="text-align: center; width: 200px; border-top: 1px solid var(--text-main); padding-top: 5px; font-size: 12px;">Class Teacher Signature</div>
+                            <div style="text-align: center; width: 200px; border-top: 1px solid var(--text-main); padding-top: 5px; font-size: 12px;">Principal Signature</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="diary" class="tab-content">
+                <div class="card">
+                    <h3>📝 Daily Diary / Homework</h3>
+                    {% for d in diaries %}
+                    <div style="background: var(--bg-input); padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #3b82f6;">
+                        <div style="font-size: 11px; color: #3b82f6; font-weight: bold;">{{ d.assigned_date }}</div>
+                        <div style="margin-top: 5px;">{{ d.task_description }}</div>
+                    </div>
+                    {% else %}
+                    <p style="color: var(--text-muted); text-align: center;">No diary entries available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div id="settings" class="tab-content">
+                <div class="card">
+                    <h3>🔒 Security Settings</h3>
+                    <form action="/change_password" method="POST">
+                        <input type="hidden" name="user_id" value="{{ student.id }}">
+                        <label>Current Password</label>
+                        <input type="password" name="old_password" class="pw-input" required>
+                        <label style="display:block; margin-top:15px;">New Password</label>
+                        <input type="password" name="new_password" class="pw-input" required>
+                        <button type="submit" class="pw-btn">Update Password</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Switch between tabs without reloading the page
+        function showTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        // Handles Dark/Light Mode Preference
+        const toggleBtn = document.getElementById('theme-toggle');
+        toggleBtn.addEventListener('click', () => {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            toggleBtn.innerText = newTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+        });
+
+        // Prevention of choosing past dates for leave
+        const today = new Date().toISOString().split('T')[0];
+        if(document.getElementById('start_date')){
+            document.getElementById('start_date').setAttribute('min', today);
+            document.getElementById('end_date').setAttribute('min', today);
+        }
+    </script>
+</body>
+</html>

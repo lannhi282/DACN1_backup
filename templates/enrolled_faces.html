@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrolled Faces | EduScan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #2ecc71;
+            --danger: #e74c3c;
+            --bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg);
+            color: #333;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--primary);
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 1.2rem;
+            border-bottom: 1px solid #455a64;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .class-link {
+            display: block;
+            padding: 12px 15px;
+            color: #bdc3c7;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .class-link:hover, .class-link.active {
+            background: #34495e;
+            color: white;
+        }
+
+        .class-link.active {
+            border-left: 4px solid var(--accent);
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .face-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+            border: 1px solid #eee;
+            position: relative; /* Added for the delete button positioning */
+        }
+
+        .face-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background-color: #eee;
+        }
+
+        /* --- New Delete Button Styles --- */
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--danger);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 0.8rem;
+            border: 2px solid white;
+            transition: 0.3s;
+            z-index: 10;
+        }
+
+        .delete-btn:hover {
+            transform: scale(1.2);
+            background: #c0392b;
+        }
+
+        .student-info {
+            padding: 10px;
+        }
+
+        .student-name {
+            font-weight: bold;
+            color: var(--primary);
+            text-transform: capitalize;
+        }
+
+        .no-selection {
+            text-align: center;
+            margin-top: 100px;
+            color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2><i class="fas fa-graduation-cap"></i> CLASSES</h2>
+        {% for c in all_classes %}
+        <a href="{{ url_for('view_portal', class_name=c.class_name) }}" 
+           class="class-link {{ 'active' if active_class == c.class_name }}">
+            <i class="fas fa-folder"></i> {{ c.class_name }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <div>
+                <a href="{{ url_for('admin_dashboard') }}" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <h1>{{ active_class if active_class else "Select a Class" }}</h1>
+            </div>
+        </div>
+
+        {% if active_class %}
+            {% if students %}
+                <div class="gallery-grid">
+                    {% for s in students %}
+                        {% if s.face_image %}
+                        <div class="face-card">
+                            <a href="{{ url_for('delete_student_face', student_id=s.id) }}" 
+                               class="delete-btn" 
+                               onclick="return confirm('Permanently delete facial data for {{ s.name }}?')">
+                                <i class="fas fa-times"></i>
+                            </a>
+
+                            <img src="{{ url_for('static', filename='enrollments/' + s.face_image) }}" 
+                                 alt="{{ s.name }}" 
+                                 class="face-img"
+                                 onerror="this.src='https://ui-avatars.com/api/?name={{ s.name | urlencode }}&background=2c3e50&color=fff'">
+                            
+                            <div class="student-info">
+                                <p class="student-name">{{ s.name }}</p>
+                                <small>ID: #{{ s.id }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-selection">
+                    <i class="fas fa-user-slash" style="font-size: 3rem;"></i>
+                    <p>No real students found in this class.</p>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="no-selection">
+                <i class="fas fa-id-badge" style="font-size: 3rem;"></i>
+                <p>Please click on a class from the left sidebar.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

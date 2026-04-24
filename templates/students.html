@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Enrolled Database | EduScan</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; padding: 40px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .back-btn { color: #94a3b8; text-decoration: none; font-weight: bold; padding: 8px 16px; border: 1px solid #334155; border-radius: 8px; transition: 0.3s; }
+        .back-btn:hover { background: #1e293b; color: white; }
+
+        /* Action Bar for Bulk Delete */
+        .action-bar { 
+            width: 100%; 
+            max-width: 600px; 
+            margin: 0 auto 20px auto; 
+            display: flex; 
+            gap: 10px; 
+        }
+        .btn-manage { background: #6366f1; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; flex: 1; }
+        .btn-bulk-delete { background: #ef4444; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; flex: 1; display: none; }
+
+        /* Search Bar Styling */
+        .search-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto 30px auto;
+        }
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+        .search-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Class Folder Card Style */
+        .class-folder {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        .folder-header {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+        }
+        .folder-header:hover { background: #2d3748; }
+        .folder-header h2 { margin: 0; color: #3b82f6; display: flex; align-items: center; gap: 10px; }
+        
+        /* Face Grid (Hidden by default) */
+        .face-grid {
+            display: none; 
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: #0f172a;
+            border-top: 1px solid #334155;
+        }
+
+        /* Student Card Style */
+        .student-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #334155;
+            transition: 0.3s;
+            position: relative;
+        }
+        .student-card:hover { transform: translateY(-5px); border-color: #3b82f6; }
+        .student-card img { width: 100%; height: 150px; border-radius: 8px; object-fit: cover; border: 2px solid #3b82f6; }
+        .student-card h3 { margin: 10px 0; font-size: 16px; color: #f8fafc; }
+
+        /* Checkbox Styling */
+        .bulk-checkbox {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            display: none;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .btn-remove {
+            background: #ef4444;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 11px;
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .student-count {
+            background: #334155;
+            color: #3b82f6;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .no-results {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>📁 Enrolled Database</h1>
+        <a href="/" class="back-btn">← Back to Dashboard</a>
+    </div>
+
+    <div class="action-bar">
+        <button class="btn-manage" id="manageBtn" onclick="toggleManageMode()">⚙️ MANAGE DATABASE</button>
+        <button class="btn-bulk-delete" id="deleteBtn" onclick="submitBulkDelete()">🗑️ DELETE SELECTED</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="studentSearch" class="search-input" onkeyup="filterStudents()" placeholder="🔍 Search student by name across all classes...">
+    </div>
+
+    {% set grouped = {} %}
+    {% for student in students %}
+        {% if student.class not in grouped %}
+            {% set _ = grouped.update({student.class: []}) %}
+        {% endif %}
+        {% set _ = grouped[student.class].append(student) %}
+    {% endfor %}
+
+    <div class="container" id="mainContainer">
+        <form id="bulkDeleteForm" action="/delete_multiple_students" method="POST">
+            {% for class_name, student_list in grouped.items() %}
+            <div class="class-folder" id="folder-container-{{ class_name|replace(' ', '_') }}">
+                <div class="folder-header" onclick="toggleFolder('{{ class_name|replace(' ', '_') }}')">
+                    <h2>📂 {{ class_name }}</h2>
+                    <span class="student-count">{{ student_list|length }} Students</span>
+                </div>
+                
+                <div class="face-grid" id="folder-{{ class_name|replace(' ', '_') }}">
+                    {% for student in student_list %}
+                    <div class="student-card">
+                        <input type="checkbox" name="student_ids" value="{{ student.id }}" class="bulk-checkbox">
+                        <img src="data:image/jpeg;base64,{{ student.image }}" alt="Face">
+                        <h3>{{ student.name }}</h3>
+                        <a href="/delete_student/{{ student.id }}" class="btn-remove single-remove-btn" onclick="return confirm('Delete this face?')">REMOVE</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+                <p style="text-align: center; color: #64748b;">No students enrolled in any class.</p>
+            {% endfor %}
+        </form>
+        <div id="noResults" class="no-results">No students found matching that name.</div>
+    </div>
+
+    <script>
+        let isManageMode = false;
+
+        function toggleManageMode() {
+            isManageMode = !isManageMode;
+            const checkboxes = document.querySelectorAll('.bulk-checkbox');
+            const singleBtns = document.querySelectorAll('.single-remove-btn');
+            const deleteBtn = document.getElementById('deleteBtn');
+            const manageBtn = document.getElementById('manageBtn');
+
+            checkboxes.forEach(cb => cb.style.display = isManageMode ? 'block' : 'none');
+            singleBtns.forEach(btn => btn.style.display = isManageMode ? 'none' : 'block');
+            
+            // Fixed the syntax error here (removed extra parenthesis)
+            deleteBtn.style.display = isManageMode ? 'block' : 'none';
+            
+            manageBtn.innerText = isManageMode ? "❌ CANCEL" : "⚙️ MANAGE DATABASE";
+            manageBtn.style.background = isManageMode ? "#475569" : "#6366f1";
+        }
+
+        function submitBulkDelete() {
+            const selected = document.querySelectorAll('input[name="student_ids"]:checked');
+            if (selected.length === 0) {
+                alert("Please select at least one student.");
+                return;
+            }
+            if (confirm(`Are you sure you want to delete ${selected.length} students?`)) {
+                document.getElementById('bulkDeleteForm').submit();
+            }
+        }
+
+        function toggleFolder(id) {
+            const grid = document.getElementById('folder-' + id);
+            if (grid.style.display === "grid") {
+                grid.style.display = "none";
+            } else {
+                grid.style.display = "grid";
+            }
+        }
+
+        function filterStudents() {
+            let input = document.getElementById('studentSearch').value.toLowerCase();
+            let cards = document.getElementsByClassName('student-card');
+            let folders = document.getElementsByClassName('class-folder');
+            let hasAnyVisible = false;
+
+            for (let i = 0; i < cards.length; i++) {
+                let name = cards[i].getElementsByTagName("h3")[0].innerText.toLowerCase();
+                if (name.includes(input)) {
+                    cards[i].style.display = "";
+                    hasAnyVisible = true;
+                } else {
+                    cards[i].style.display = "none";
+                }
+            }
+
+            for (let j = 0; j < folders.length; j++) {
+                let innerCards = folders[j].getElementsByClassName('student-card');
+                let folderHasVisible = false;
+                
+                for (let k = 0; k < innerCards.length; k++) {
+                    if (innerCards[k].style.display !== "none") {
+                        folderHasVisible = true;
+                        break;
+                    }
+                }
+
+                if (folderHasVisible) {
+                    folders[j].style.display = "";
+                    if (input.length > 0) {
+                        folders[j].querySelector('.face-grid').style.display = "grid";
+                    }
+                } else {
+                    folders[j].style.display = "none";
+                }
+            }
+
+            document.getElementById('noResults').style.display = hasAnyVisible ? "none" : "block";
+        }
+    </script>
+</body>
+</html>
