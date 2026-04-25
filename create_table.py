@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Lam@180511',
+    'password': '',
     'database': 'face_attendance'
 }
 

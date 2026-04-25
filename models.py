@@ -6,7 +6,7 @@ from datetime import datetime
 db_config = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Lam@180511',
+    'password': '',
     'database': 'face_attendance'
 }
 
@@ -18,7 +18,7 @@ class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     class_name = db.Column(db.String(50), nullable=False)
-    face_image = db.Column(db.Text)  # Stores face data
+    face_data = db.Column(db.LargeBinary)  # Stores face data
     password = db.Column(db.String(255))
 
 class ClassResources(db.Model):
@@ -54,7 +54,7 @@ def create_student_table():
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
             class_name VARCHAR(50) NOT NULL,
-            face_image LONGTEXT,
+            face_data LONGBLOB,     
             password VARCHAR(255)
         )
         """
