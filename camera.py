@@ -37,10 +37,10 @@ class VideoCamera:
         self.is_recognizing = False
         self.last_name = "Unknown"
         self.stable_count = 0
-        self.required_stable_frames = 3
+        self.required_stable_frames = 4
         self.last_valid_name = None
         self.last_valid_time = 0
-        self.unknown_tolerance_seconds = 1.5
+        self.unknown_tolerance_seconds = 0
 
         # Trang enroll trong app.py dang can cac bien nay
         self.enroll_mode = False
@@ -51,6 +51,7 @@ class VideoCamera:
         self.enroll_needed = 15
         self.enroll_preview_frame = None
         self.enroll_message = "Dang cho camera..."
+        self.enroll_color_face = None
 
         self.lock = threading.Lock()
 
@@ -228,6 +229,18 @@ class VideoCamera:
                                     self.enroll_samples.append(buffer.tobytes())
                                     current_count = len(self.enroll_samples)
 
+                                 # Luu lai anh mau co mau de lam anh dai dien
+                                if current_count == 1:
+                                    pad_x = int(w * 0.35)
+                                    pad_y = int(h * 0.45)
+
+                                    x1 = max(0, x - pad_x)
+                                    y1 = max(0, y - pad_y)
+                                    x2 = min(frame.shape[1], x + w + pad_x)
+                                    y2 = min(frame.shape[0], y + h + pad_y)
+
+                                    self.enroll_color_face = frame[y1:y2, x1:x2].copy()
+
                                 last_capture = now
                                 print(f"[ENROLL] Da chup mau {current_count}/{self.enroll_needed}")
                         else:
@@ -283,7 +296,7 @@ class VideoCamera:
                     VALUES (%s, %s, %s)
                 """, (student_id, student_name, blob))
 
-                cursor.execute(
+            cursor.execute(
                 "UPDATE students SET face_data = %s WHERE id = %s",
                 (samples_to_save[0], student_id)
             )
@@ -301,12 +314,19 @@ class VideoCamera:
 
             file_path = os.path.join(enroll_dir, f"{safe_name}.jpg")
 
-            nparr = np.frombuffer(samples_to_save[0], np.uint8)
-            face_img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+            with self.lock:
+                color_face = None if self.enroll_color_face is None else self.enroll_color_face.copy()
 
-            if face_img is not None:
-                cv2.imwrite(file_path, face_img)
-                print(f"[ENROLL] Da luu anh dai dien vao {file_path}")
+            if color_face is not None:
+                cv2.imwrite(file_path, color_face)
+                print(f"[ENROLL] Da luu anh mau dai dien vao {file_path}")
+            else:
+                nparr = np.frombuffer(samples_to_save[0], np.uint8)
+                face_img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+
+                if face_img is not None:
+                    cv2.imwrite(file_path, face_img)
+                    print(f"[ENROLL] Da luu anh dai dien den trang vao {file_path}")
 
             conn.commit()
 
@@ -433,27 +453,24 @@ class VideoCamera:
             self.trained = False
             print(f"[ERROR] load_known_faces: {e}")
 
-    def recognize_async(self, face_roi):
+    def recognize_async(self, gray_face):
         def run():
             try:
                 if not self.trained:
                     self.current_name = "Unknown"
+                    print("[RECOGNIZE] Model chua duoc train.")
                     return
 
-                gray = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)
-                gray = cv2.resize(gray, (200, 200))
-                gray = cv2.equalizeHist(gray)
+                label, confidence = self.recognizer.predict(gray_face)
 
-                label, confidence = self.recognizer.predict(gray)
-
-                threshold = 95
+                threshold = 85
 
                 if confidence < threshold:
                     name = self.label_to_name.get(label, "Unknown")
                 else:
                     name = "Unknown"
 
-                print(f"[RECOGNIZE] name={name}, confidence={confidence:.2f}")
+                print(f"[RECOGNIZE] name={name}, confidence={confidence:.2f}, threshold={threshold}")
 
                 self.current_name = name
 
@@ -480,21 +497,11 @@ class VideoCamera:
 
         if face_box is not None:
             x, y, w, h = face_box
-            face_roi = frame[y:y + h, x:x + w]
 
-            self.recognize_async(face_roi)
+            gray_face = self.preprocess_face(frame, face_box)
+            self.recognize_async(gray_face)
 
             name = self.current_name
-            now = time.time()
-
-# Neu vua nhan dien dung xong ma 1-2 frame sau bi Unknown,
-# giu lai ten cu de tranh bi nhap nhay Unknown
-            if name not in ["Unknown", "Scanning..."]:
-                self.last_valid_name = name
-                self.last_valid_time = now
-            else:
-                if self.last_valid_name and (now - self.last_valid_time) <= self.unknown_tolerance_seconds:
-                    name = self.last_valid_name
 
             if name == self.last_name and name not in ["Unknown", "Scanning..."]:
                 self.stable_count += 1
@@ -524,7 +531,7 @@ class VideoCamera:
             )
 
         success, jpeg = cv2.imencode(".jpg", frame)
-        return jpeg.tobytes() if success else None
+        return jpeg.tobytes() if success else None    
 
     def get_raw_frame(self):
         if not self.video.isOpened():

@@ -684,6 +684,57 @@ def finalize_class(class_name):
 #     return redirect(url_for('admin_dashboard'))
 
 @app.route('/remove_student/<int:id>')
+@app.route('/admin/recapture_face/<int:student_id>')
+@admin_required
+def recapture_face(student_id):
+    conn = None
+    cursor = None
+
+    try:
+        conn = mysql.connector.connect(**db_config)
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            "SELECT id, name FROM students WHERE id = %s",
+            (student_id,)
+        )
+        student = cursor.fetchone()
+
+        if not student:
+            flash("Student not found!", "danger")
+            return redirect(url_for('admin_dashboard'))
+
+        student_name = student['name']
+
+        # Xoa mau mat cu trong bang student_face_samples
+        cursor.execute(
+            "DELETE FROM student_face_samples WHERE student_id = %s",
+            (student_id,)
+        )
+
+        # Xoa face_data cu trong bang students
+        cursor.execute(
+            "UPDATE students SET face_data = NULL WHERE id = %s",
+            (student_id,)
+        )
+
+        conn.commit()
+
+        # Bat dau capture lai
+        system_camera.start_enroll(student_name)
+
+        flash(f"Starting face re-capture for {student_name}", "info")
+        return redirect(url_for('enroll_camera_page', name=student_name))
+
+    except Exception as e:
+        flash(f"Re-capture error: {e}", "danger")
+        return redirect(url_for('admin_dashboard'))
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 @admin_required
 def remove_student(id):
     conn = None
