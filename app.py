@@ -642,46 +642,46 @@ def finalize_class(class_name):
     flash(f"Class {class_name} session finalized.", "success")
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/add_student', methods=['POST'])
-@admin_required
-def add_student():
-    name = request.form.get('student_name').strip()
-    s_class = request.form.get('student_class')
-    password = request.form.get('student_password')
+# @app.route('/add_student', methods=['POST'])
+# @admin_required
+# def add_student():
+#     name = request.form.get('student_name').strip()
+#     s_class = request.form.get('student_class')
+#     password = request.form.get('student_password')
     
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
+#     if not os.path.exists(UPLOAD_FOLDER):
+#         os.makedirs(UPLOAD_FOLDER)
 
-    conn = None
-    cursor = None
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO students (name, class_name, password) VALUES (%s, %s, %s)", (name, s_class, password))
-        conn.commit()
+#     conn = None
+#     cursor = None
+#     try:
+#         conn = mysql.connector.connect(**db_config)
+#         cursor = conn.cursor()
+#         cursor.execute("INSERT INTO students (name, class_name, password) VALUES (%s, %s, %s)", (name, s_class, password))
+#         conn.commit()
         
-        success = system_camera.enroll_face(name)
+#         success = system_camera.enroll_face(name)
         
-        if success: 
-            time.sleep(0.5) 
-            ret, frame = system_camera.video.read()
-            if ret:
-                img_path = os.path.join(UPLOAD_FOLDER, f"{name}.jpg")
-                cv2.imwrite(img_path, frame)
+#         if success: 
+#             time.sleep(0.5) 
+#             ret, frame = system_camera.video.read()
+#             if ret:
+#                 img_path = os.path.join(UPLOAD_FOLDER, f"{name}.jpg")
+#                 cv2.imwrite(img_path, frame)
             
-            flash(f"Student {name} added and face image saved!", "success")
-        else: 
-            flash("Student added to DB, but face capture failed.", "warning")
+#             flash(f"Student {name} added and face image saved!", "success")
+#         else: 
+#             flash("Student added to DB, but face capture failed.", "warning")
             
-    except Exception as e: 
-        flash(f"Error: {e}", "danger")
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+#     except Exception as e: 
+#         flash(f"Error: {e}", "danger")
+#     finally:
+#         if cursor:
+#             cursor.close()
+#         if conn:
+#             conn.close()
         
-    return redirect(url_for('admin_dashboard'))
+#     return redirect(url_for('admin_dashboard'))
 
 @app.route('/remove_student/<int:id>')
 @admin_required
@@ -1029,39 +1029,39 @@ def change_password():
 
 # --- UTILITIES ---
 
-@app.route('/add_teacher', methods=['POST'])
-@admin_required
-def add_teacher():
-    name = request.form.get('t_name').strip()
-    user = request.form.get('t_username')
-    pwd = request.form.get('t_password')
-    t_class = request.form.get('t_class')
-    conn = None
-    cursor = None
-    try:
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO teachers (full_name, username, password, assigned_class) VALUES (%s, %s, %s, %s)", 
-                        (name, user, pwd, t_class))
-        conn.commit()
-        success = system_camera.enroll_face(name)
-        if success: 
-            time.sleep(0.5) 
-            ret, frame = system_camera.video.read()
-            if ret:
-                img_path = os.path.join(UPLOAD_FOLDER, f"{name}.jpg")
-                cv2.imwrite(img_path, frame)
-            flash(f"Teacher {name} added!", "success")
-        else: 
-            flash(f"Teacher added, but face failed.", "warning")
-    except Exception as e: 
-        flash(f"Error: {e}", "danger")
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-    return redirect(url_for('admin_dashboard'))
+# @app.route('/add_teacher', methods=['POST'])
+# @admin_required
+# def add_teacher():
+#     name = request.form.get('t_name').strip()
+#     user = request.form.get('t_username')
+#     pwd = request.form.get('t_password')
+#     t_class = request.form.get('t_class')
+#     conn = None
+#     cursor = None
+#     try:
+#         conn = mysql.connector.connect(**db_config)
+#         cursor = conn.cursor()
+#         cursor.execute("INSERT INTO teachers (full_name, username, password, assigned_class) VALUES (%s, %s, %s, %s)", 
+#                         (name, user, pwd, t_class))
+#         conn.commit()
+#         success = system_camera.enroll_face(name)
+#         if success: 
+#             time.sleep(0.5) 
+#             ret, frame = system_camera.video.read()
+#             if ret:
+#                 img_path = os.path.join(UPLOAD_FOLDER, f"{name}.jpg")
+#                 cv2.imwrite(img_path, frame)
+#             flash(f"Teacher {name} added!", "success")
+#         else: 
+#             flash(f"Teacher added, but face failed.", "warning")
+#     except Exception as e: 
+#         flash(f"Error: {e}", "danger")
+#     finally:
+#         if cursor:
+#             cursor.close()
+#         if conn:
+#             conn.close()
+#     return redirect(url_for('admin_dashboard'))
 
 @app.route('/remove_teacher/<int:id>')
 @admin_required
@@ -1831,7 +1831,105 @@ def attendance_dashboard():
     
     return render_template('attendance_logs.html', classes=all_classes, records=all_records)
 
-
+# 1. Route: Live video feed cho màn hình enroll
+@app.route('/enroll_feed')
+def enroll_feed():
+    """Stream camera với overlay tiến độ enroll"""
+    def generate():
+        while True:
+            frame_bytes, done, success = system_camera.get_enroll_frame()
+            if done:
+                # Gửi 1 frame trắng báo hiệu xong
+                break
+            if frame_bytes:
+                yield (
+                    b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n\r\n'
+                )
+            time.sleep(0.05)
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+ 
+ 
+# 2. Route: Kiểm tra trạng thái enroll (AJAX polling)
+@app.route('/enroll_status')
+def enroll_status():
+    """Client gọi mỗi 1s để biết enroll xong chưa"""
+    return jsonify({
+        "done":    system_camera.enroll_done,
+        "success": system_camera.enroll_success,
+        "count":   len(system_camera.enroll_samples),
+        "needed":  system_camera.enroll_needed,
+    })
+ 
+ 
+# 3. Route: Trang enroll có live camera (thay thế add_student)
+@app.route('/add_student', methods=['POST'])
+@admin_required
+def add_student():
+    name     = request.form.get('student_name', '').strip()
+    s_class  = request.form.get('student_class')
+    password = request.form.get('student_password')
+ 
+    if not name:
+        flash("Tên student không được để trống!", "danger")
+        return redirect(url_for('admin_dashboard'))
+ 
+    conn = cursor = None
+    try:
+        conn   = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO students (name, class_name, password) VALUES (%s, %s, %s)",
+            (name, s_class, password)
+        )
+        conn.commit()
+    except Exception as e:
+        flash(f"Lỗi DB: {e}", "danger")
+        return redirect(url_for('admin_dashboard'))
+    finally:
+        if cursor: cursor.close()
+        if conn:   conn.close()
+ 
+    # Chuyển sang trang enroll camera
+    system_camera.start_enroll(name)
+    return redirect(url_for('enroll_camera_page', name=name))
+ 
+ 
+@app.route('/enroll_camera/<string:name>')
+@admin_required
+def enroll_camera_page(name):
+    if not system_camera.enroll_mode and not system_camera.enroll_done:
+        system_camera.start_enroll(name)
+    return render_template('enroll_camera.html', student_name=name)
+ 
+ 
+# 4. Route: Trang enroll teacher (tương tự)
+@app.route('/add_teacher', methods=['POST'])
+@admin_required
+def add_teacher():
+    name    = request.form.get('t_name', '').strip()
+    user    = request.form.get('t_username')
+    pwd     = request.form.get('t_password')
+    t_class = request.form.get('t_class')
+ 
+    conn = cursor = None
+    try:
+        conn   = mysql.connector.connect(**db_config)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO teachers (full_name, username, password, assigned_class) VALUES (%s, %s, %s, %s)",
+            (name, user, pwd, t_class)
+        )
+        conn.commit()
+    except Exception as e:
+        flash(f"Lỗi DB: {e}", "danger")
+        return redirect(url_for('admin_dashboard'))
+    finally:
+        if cursor: cursor.close()
+        if conn:   conn.close()
+ 
+    system_camera.start_enroll(name)
+    return redirect(url_for('enroll_camera_page', name=name))
 
 
 
@@ -1840,4 +1938,4 @@ def attendance_dashboard():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chụp Khuôn Mặt | EduScan</title>
+    <style>
+      :root {
+        --primary: #3b82f6;
+        --green: #10b981;
+        --red: #ef4444;
+        --bg: #0f172a;
+        --card: #1e293b;
+        --border: #334155;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Inter", "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        padding: 30px;
+      }
+
+      .title-block {
+        text-align: center;
+      }
+      h1 {
+        font-size: 22px;
+        color: var(--primary);
+        letter-spacing: -0.5px;
+      }
+      h1 span {
+        color: var(--green);
+      }
+      .subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .cam-wrap {
+        position: relative;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 3px solid var(--border);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        width: 640px;
+        max-width: 100%;
+        background: #000;
+        aspect-ratio: 4/3;
+      }
+
+      #feed {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+      }
+
+      .scan-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--primary);
+        box-shadow: 0 0 12px var(--primary);
+        top: 0;
+        animation: sweep 2.5s linear infinite;
+        pointer-events: none;
+      }
+      @keyframes sweep {
+        0% {
+          top: 0%;
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          top: 100%;
+          opacity: 0;
+        }
+      }
+
+      .corners {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .corner {
+        position: absolute;
+        width: 36px;
+        height: 36px;
+        border: 3px solid var(--primary);
+        opacity: 0.7;
+      }
+      .tl {
+        top: 16px;
+        left: 16px;
+        border-right: 0;
+        border-bottom: 0;
+      }
+      .tr {
+        top: 16px;
+        right: 16px;
+        border-left: 0;
+        border-bottom: 0;
+      }
+      .bl {
+        bottom: 16px;
+        left: 16px;
+        border-right: 0;
+        border-top: 0;
+      }
+      .br {
+        bottom: 16px;
+        right: 16px;
+        border-left: 0;
+        border-top: 0;
+      }
+
+      .progress-wrap {
+        width: 640px;
+        max-width: 100%;
+      }
+      .progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .progress-label strong {
+        color: var(--text);
+      }
+      .progress-track {
+        background: var(--card);
+        border-radius: 99px;
+        height: 14px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, var(--primary), var(--green));
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+
+      .tips {
+        width: 640px;
+        max-width: 100%;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px 20px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.9;
+      }
+      .tips b {
+        color: var(--text);
+      }
+
+      #result-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.88);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 20px;
+        animation: fadeIn 0.4s ease;
+      }
+      #result-overlay.show {
+        display: flex;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .result-icon {
+        font-size: 80px;
+      }
+      .result-msg {
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+      }
+      .result-sub {
+        font-size: 14px;
+        color: var(--muted);
+        text-align: center;
+        max-width: 400px;
+      }
+
+      .btn {
+        padding: 12px 32px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 15px;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 8px;
+        transition: opacity 0.2s;
+      }
+      .btn:hover {
+        opacity: 0.85;
+      }
+      .btn-green {
+        background: var(--green);
+        color: #fff;
+      }
+
+      #retake-btn {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--muted);
+        cursor: pointer;
+        background: none;
+        border: none;
+        text-decoration: underline;
+      }
+      #retake-btn:hover {
+        color: var(--primary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="title-block">
+      <h1>&#128248; Chup Khuon Mat &mdash; <span>{{ student_name }}</span></h1>
+      <p class="subtitle">
+        Nhin thang vao camera. He thong tu dong chup nhieu goc.
+      </p>
+    </div>
+
+    <div class="cam-wrap">
+      <img id="feed" src="/enroll_feed" alt="Camera Feed" />
+      <div class="scan-line"></div>
+      <div class="corners">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Tien do thu thap mau</span>
+        <strong id="prog-text">0 / 15</strong>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-bar"></div>
+      </div>
+    </div>
+
+    <div class="tips">
+      Meo de nhan dien chinh xac:<br />
+      &bull; Nhin thang, sau do tu tu xoay mat trai / phai nhe nhang<br />
+      &bull; Dam bao anh sang du, khong bi nguoc sang<br />
+      &bull; He thong thu <b>15 mau</b> tu dong &mdash; khong can bam gi
+    </div>
+
+    <div id="result-overlay">
+      <div class="result-icon" id="result-icon">&#10003;</div>
+      <div class="result-msg" id="result-msg">Dang ky thanh cong!</div>
+      <div class="result-sub" id="result-sub"></div>
+      <a href="/admin/dashboard" class="btn btn-green">Ve Trang Quan Ly</a>
+      <button id="retake-btn">Chup lai</button>
+    </div>
+
+    <script>
+      var STUDENT_NAME = "{{ student_name }}";
+      var RETAKE_URL = "/enroll_camera/" + encodeURIComponent(STUDENT_NAME);
+
+      document.getElementById("retake-btn").onclick = function () {
+        window.location.href = RETAKE_URL;
+      };
+
+      var polling = true;
+
+      function pollStatus() {
+        if (!polling) return;
+        fetch("/enroll_status")
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            var pct = Math.round((data.count / data.needed) * 100);
+            document.getElementById("prog-bar").style.width = pct + "%";
+            document.getElementById("prog-text").innerText =
+              data.count + " / " + data.needed;
+            if (data.done) {
+              polling = false;
+              showResult(data.success);
+            }
+          })
+          .catch(function (e) {
+            console.error("Poll error:", e);
+          });
+      }
+
+      function showResult(success) {
+        document.getElementById("result-icon").innerText = success
+          ? "\u2705"
+          : "\u274C";
+        document.getElementById("result-msg").innerText = success
+          ? "Dang ky khuon mat thanh cong!"
+          : "Chup that bai!";
+        document.getElementById("result-sub").innerText = success
+          ? STUDENT_NAME + " da duoc luu vao he thong nhan dien."
+          : "Khong phat hien du khuon mat. Vui long thu lai.";
+        document.getElementById("result-overlay").classList.add("show");
+      }
+
+      setInterval(pollStatus, 800);
+      pollStatus();
+    </script>
+  </body>
+</html>

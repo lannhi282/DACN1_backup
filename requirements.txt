@@ -5,6 +5,9 @@ pymysql
 cryptography
 python-dotenv
 werkzeug
-opencv-python
+opencv-contrib-python
 numpy
 deepface
+mysql-connector-python
+pandas
+fpdf
